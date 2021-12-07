@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "raymath.h"
+#include "collib2d.h"
 #include "polygon.h"
 
 #define SCREEN_WIDTH 1280
@@ -19,6 +20,11 @@ typedef struct Object {
 } Object;
 
 float normalizeDegrees(float degrees);
+
+static Vector2 getRandomScreenCoords() {
+	Vector2 result = {GetRandomValue(0, SCREEN_WIDTH), GetRandomValue(0, SCREEN_HEIGHT)};
+	return result;
+}
 
 int main() {
 
@@ -57,9 +63,21 @@ int main() {
 		}
 	};
 
+	Vector2 c1Pos = getRandomScreenCoords();
+	Vector2 c2Pos = getRandomScreenCoords();
+	float c1Radius = 10.0f;
+	float c2Radius = 12.0f;
+	Color c1Color = WHITE;
+	Color c2Color = WHITE;
+
+	Rectangle rect1 = {GetRandomValue(0, SCREEN_WIDTH), GetRandomValue(0, SCREEN_HEIGHT), 50, 50};
+	Rectangle rect2 = {GetRandomValue(0, SCREEN_WIDTH), GetRandomValue(0, SCREEN_HEIGHT), 50, 50};
+	Color r1Color = WHITE;
+	Color r2Color = WHITE;
+
 	for (int i = 0; i < arrayLength(polygons); i++) {
 		GetRandomValue(0, SCREEN_WIDTH);
-		polygons[i].position = (Vector2){GetRandomValue(0, SCREEN_WIDTH), GetRandomValue(0, SCREEN_HEIGHT)};
+		polygons[i].position = getRandomScreenCoords();
 	}
 
 
@@ -71,6 +89,8 @@ int main() {
 	while(!WindowShouldClose()) {
 
 		Vector2 mousePosition = GetMousePosition();
+		c1Color = c2Color = WHITE;
+		r1Color = r2Color = WHITE;
 
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 			for (int i = 0; i < arrayLength(polygons); i++) {
@@ -79,16 +99,71 @@ int main() {
 					break;
 				}
 			}
+
+			if (CheckCollisionPointCircle(mousePosition, c1Pos, c1Radius)) {
+				shapeGrabbed = -2;
+			}
+			else if (CheckCollisionPointCircle(mousePosition, c2Pos, c2Radius)) {
+				shapeGrabbed = -3;
+			}
+			else if (CheckCollisionPointRec(mousePosition, rect1)) {
+				shapeGrabbed = -4;
+			}
+			else if (CheckCollisionPointRec(mousePosition, rect2)) {
+				shapeGrabbed = -5;
+			}
 		}
 
 		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) || !IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
 			shapeGrabbed = -1;
 		}
 
-		if (shapeGrabbed >= 0) {
+		Vector2 overlap;
+		
+		if (shapeGrabbed >= 0) { // Polygons
 			polygons[shapeGrabbed].position = mousePosition;
 			float md = GetMouseWheelMove();
 			polygons[shapeGrabbed].scale += md / fabs(md + (md == 0)) * SCROLL_INCREMENT;
+		
+		} else if (shapeGrabbed == -2) { // Circle 1
+			c1Pos = mousePosition;
+			if (collib2d_check_circles(c1Pos.x, c1Pos.y, c1Radius, c2Pos.x, c2Pos.y, c2Radius, &overlap.x, &overlap.y)) {
+				c1Color = c2Color = RED;
+				c2Pos = Vector2Add(c2Pos, overlap);
+			}
+		
+		} else if (shapeGrabbed == -3) { // Circle 2
+			c2Pos = mousePosition;
+			if (collib2d_check_circles(c2Pos.x, c2Pos.y, c2Radius, c1Pos.x, c1Pos.y, c1Radius, &overlap.x, &overlap.y)) {
+				c1Color = c2Color = RED;
+				c1Pos = Vector2Add(c1Pos, overlap);
+			}
+		}
+
+		else if (shapeGrabbed == -4) { // Rectangle 1
+			rect1.x = mousePosition.x - rect1.width/2;
+			rect1.y = mousePosition.y - rect1.height/2;
+
+			bool hit = collib2d_check_rects(rect1.x, rect1.y, rect1.width, rect1.height, rect2.x, rect2.y, rect2.width, rect2.height, &overlap.x, &overlap.y);
+			if (hit) {
+				Vector2 newPos = Vector2Add((Vector2){rect2.x, rect2.y}, overlap);
+				rect2.x = newPos.x;
+				rect2.y = newPos.y;
+				r1Color = r2Color = RED;
+			}
+		}
+
+		else if (shapeGrabbed == -5) {
+			rect2.x = mousePosition.x - rect1.width/2;
+			rect2.y = mousePosition.y - rect1.height/2;
+
+			bool hit = collib2d_check_rects(rect2.x, rect2.y, rect2.width, rect2.height, rect1.x, rect1.y, rect1.width, rect1.height, &overlap.x, &overlap.y);
+			if (hit) {
+				Vector2 newPos = Vector2Add((Vector2){rect1.x, rect1.y}, overlap);
+				rect1.x = newPos.x;
+				rect1.y = newPos.y;
+				r1Color = r2Color = RED;
+			}
 		}
 		
 		BeginDrawing();
@@ -96,16 +171,12 @@ int main() {
 			Polygon p = {0};
 			Polygon p2 = {0};
 			for (int i = 0; i < arrayLength(polygons); i++) {
-				//polygons[i].rotation++;
-				//polygons[i].rotation = normalizeDegrees(polygons[i].rotation);
-
 				Color color = (shapeGrabbed == i) ? YELLOW : WHITE;
 				
 				p = polygons[i].shape;
 				p = rotatePolygon(p, polygons[i].rotation);
 				p = scalePolygon(p, polygons[i].scale);
 
-				Vector2 overlap;
 				for (int e = 0; e < arrayLength(polygons); e++) {
 					if (e == i) continue;
 
@@ -128,6 +199,12 @@ int main() {
 				p = rotatePolygon(p, 180);
 				drawPolygon(polygons[i].position, p, color);
 			}
+
+			DrawCircle(c1Pos.x, c1Pos.y, c1Radius, c1Color);
+			DrawCircle(c2Pos.x, c2Pos.y, c2Radius, c2Color);
+
+			DrawRectangleRec(rect1, r1Color);
+			DrawRectangleRec(rect2, r2Color);
 
 			DrawText("Click to grab and drag polygons.", 32, 32, 24, WHITE);
 			DrawText("Scroll mouse wheel to resize current polygon.", 32, 64, 24, WHITE);
