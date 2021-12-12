@@ -12,6 +12,7 @@
 #define arrayLength(array) sizeof(array) / sizeof(array[0])
 
 typedef struct Object {
+	enum ObjectType {circle, rectangle, polygon} type;
 	Vector2 position;
 	float scale;
 	float rotation;
@@ -20,6 +21,7 @@ typedef struct Object {
 } Object;
 
 float normalizeDegrees(float degrees);
+bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap);
 
 static Vector2 getRandomScreenCoords() {
 	Vector2 result = {GetRandomValue(0, SCREEN_WIDTH), GetRandomValue(0, SCREEN_HEIGHT)};
@@ -29,55 +31,70 @@ static Vector2 getRandomScreenCoords() {
 int main() {
 
 	Polygon triangle = generatePolygon(3);
-	Polygon square = generatePolygon(4);
-	square = rotatePolygon(square, 45);
+	Polygon square = { 	
+		.vertices = { {0, 0}, {1, 0}, {1, 1}, {0, 1} },
+		.vertCount = 4,
+	};
+	Polygon rect = { 	
+		.vertices = { {0, 0}, {1, 0}, {1, 0.5f}, {0, 0.5f} },
+		.vertCount = 4,
+	};
 	Polygon pentagon = generatePolygon(5);
 	pentagon = rotatePolygon(pentagon, -90);
 	Polygon hexagon = generatePolygon(6);
 	Polygon octagon = generatePolygon(8);
 
-	Object polygons[] = {
+	Object objects[] = {
 		{
+			.type = circle,
+			.scale = POLYGON_SCALE,
+		},
+		
+		{
+			.type = circle,
+			.scale = POLYGON_SCALE * 1.5,
+		},
+		
+		{
+			.type = polygon,
 			.shape = triangle,
 			.scale = POLYGON_SCALE,
 		},
 
 		{
+			.type = rectangle,
 			.shape = square,
 			.scale = POLYGON_SCALE,
 		},
 
 		{
+			.type = rectangle,
+			.shape = rect,
+			.scale = POLYGON_SCALE * 4,
+		},
+
+		{
+			.type = polygon,
 			.shape = pentagon,
 			.scale = POLYGON_SCALE,
 		},
 
 		{
+			.type = polygon,
 			.shape = hexagon,
 			.scale = POLYGON_SCALE,
 		},
 
 		{
+			.type = polygon,
 			.shape = octagon,
 			.scale = POLYGON_SCALE,
 		}
 	};
 
-	Vector2 c1Pos = getRandomScreenCoords();
-	Vector2 c2Pos = getRandomScreenCoords();
-	float c1Radius = 10.0f;
-	float c2Radius = 12.0f;
-	Color c1Color = WHITE;
-	Color c2Color = WHITE;
-
-	Rectangle rect1 = {GetRandomValue(0, SCREEN_WIDTH), GetRandomValue(0, SCREEN_HEIGHT), 50, 50};
-	Rectangle rect2 = {GetRandomValue(0, SCREEN_WIDTH), GetRandomValue(0, SCREEN_HEIGHT), 50, 50};
-	Color r1Color = WHITE;
-	Color r2Color = WHITE;
-
-	for (int i = 0; i < arrayLength(polygons); i++) {
+	for (int i = 0; i < arrayLength(objects); i++) {
 		GetRandomValue(0, SCREEN_WIDTH);
-		polygons[i].position = getRandomScreenCoords();
+		objects[i].position = getRandomScreenCoords();
 	}
 
 
@@ -89,28 +106,13 @@ int main() {
 	while(!WindowShouldClose()) {
 
 		Vector2 mousePosition = GetMousePosition();
-		c1Color = c2Color = WHITE;
-		r1Color = r2Color = WHITE;
 
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			for (int i = 0; i < arrayLength(polygons); i++) {
-				if (CheckCollisionPointCircle(mousePosition, polygons[i].position, polygons[i].scale)) {
+			for (int i = 0; i < arrayLength(objects); i++) {
+				if (CheckCollisionPointCircle(mousePosition, objects[i].position, objects[i].scale)) {
 					shapeGrabbed = i;
 					break;
 				}
-			}
-
-			if (CheckCollisionPointCircle(mousePosition, c1Pos, c1Radius)) {
-				shapeGrabbed = -2;
-			}
-			else if (CheckCollisionPointCircle(mousePosition, c2Pos, c2Radius)) {
-				shapeGrabbed = -3;
-			}
-			else if (CheckCollisionPointRec(mousePosition, rect1)) {
-				shapeGrabbed = -4;
-			}
-			else if (CheckCollisionPointRec(mousePosition, rect2)) {
-				shapeGrabbed = -5;
 			}
 		}
 
@@ -121,90 +123,50 @@ int main() {
 		Vector2 overlap;
 		
 		if (shapeGrabbed >= 0) { // Polygons
-			polygons[shapeGrabbed].position = mousePosition;
+			objects[shapeGrabbed].position = mousePosition;
 			float md = GetMouseWheelMove();
-			polygons[shapeGrabbed].scale += md / fabs(md + (md == 0)) * SCROLL_INCREMENT;
+			objects[shapeGrabbed].scale += md / fabs(md + (md == 0)) * SCROLL_INCREMENT;
 		
-		} else if (shapeGrabbed == -2) { // Circle 1
-			c1Pos = mousePosition;
-			if (collib2d_check_circles(c1Pos.x, c1Pos.y, c1Radius, c2Pos.x, c2Pos.y, c2Radius, &overlap.x, &overlap.y)) {
-				c1Color = c2Color = RED;
-				c2Pos = Vector2Add(c2Pos, overlap);
-			}
-		
-		} else if (shapeGrabbed == -3) { // Circle 2
-			c2Pos = mousePosition;
-			if (collib2d_check_circles(c2Pos.x, c2Pos.y, c2Radius, c1Pos.x, c1Pos.y, c1Radius, &overlap.x, &overlap.y)) {
-				c1Color = c2Color = RED;
-				c1Pos = Vector2Add(c1Pos, overlap);
-			}
-		}
-
-		else if (shapeGrabbed == -4) { // Rectangle 1
-			rect1.x = mousePosition.x - rect1.width/2;
-			rect1.y = mousePosition.y - rect1.height/2;
-
-			bool hit = collib2d_check_rects(rect1.x, rect1.y, rect1.width, rect1.height, rect2.x, rect2.y, rect2.width, rect2.height, &overlap.x, &overlap.y);
-			if (hit) {
-				Vector2 newPos = Vector2Add((Vector2){rect2.x, rect2.y}, overlap);
-				rect2.x = newPos.x;
-				rect2.y = newPos.y;
-				r1Color = r2Color = RED;
-			}
-		}
-
-		else if (shapeGrabbed == -5) {
-			rect2.x = mousePosition.x - rect1.width/2;
-			rect2.y = mousePosition.y - rect1.height/2;
-
-			bool hit = collib2d_check_rects(rect2.x, rect2.y, rect2.width, rect2.height, rect1.x, rect1.y, rect1.width, rect1.height, &overlap.x, &overlap.y);
-			if (hit) {
-				Vector2 newPos = Vector2Add((Vector2){rect1.x, rect1.y}, overlap);
-				rect1.x = newPos.x;
-				rect1.y = newPos.y;
-				r1Color = r2Color = RED;
-			}
 		}
 		
 		BeginDrawing();
 			ClearBackground((Color){0,0,0,255});
 			Polygon p = {0};
 			Polygon p2 = {0};
-			for (int i = 0; i < arrayLength(polygons); i++) {
+			for (int i = 0; i < arrayLength(objects); i++) {
 				Color color = (shapeGrabbed == i) ? YELLOW : WHITE;
 				
-				p = polygons[i].shape;
-				p = rotatePolygon(p, polygons[i].rotation);
-				p = scalePolygon(p, polygons[i].scale);
+				p = objects[i].shape;
+				p = rotatePolygon(p, objects[i].rotation);
+				p = scalePolygon(p, objects[i].scale);
 
-				for (int e = 0; e < arrayLength(polygons); e++) {
+				for (int e = 0; e < arrayLength(objects); e++) {
 					if (e == i) continue;
 
-					p2 = polygons[e].shape;
-					p2 = rotatePolygon(p2, polygons[e].rotation);
-					p2 = scalePolygon(p2, polygons[e].scale);
+//					p2 = objects[e].shape;
+//					p2 = rotatePolygon(p2, objects[e].rotation);
+//					p2 = scalePolygon(p2, objects[e].scale);
 
 					overlap = (Vector2){0};
 					
-					bool hit = polygonIntersect(polygons[i].position, p, polygons[e].position, p2, &overlap);
+//					bool hit = polygonIntersect(objects[i].position, p, objects[e].position, p2, &overlap);
+					bool hit = checkObjectCollision(objects[i], objects[e], &overlap);
 
 					if (hit) {
 						color = RED;
 						if (i == shapeGrabbed) break;
-						polygons[i].position = Vector2Subtract(polygons[i].position, overlap);
+						objects[i].position = Vector2Subtract(objects[i].position, overlap);
 					}
 				}
 
-				// Why is the x axis flipped?
-				p = rotatePolygon(p, 180);
-				drawPolygon(polygons[i].position, p, color);
+				if (objects[i].type == circle) {
+					DrawCircle(objects[i].position.x, objects[i].position.y, objects[i].scale, color);
+				} else {
+					// Why is the x axis flipped?
+					p = rotatePolygon(p, 180);
+					drawPolygon(objects[i].position, p, color);
+				}
 			}
-
-			DrawCircle(c1Pos.x, c1Pos.y, c1Radius, c1Color);
-			DrawCircle(c2Pos.x, c2Pos.y, c2Radius, c2Color);
-
-			DrawRectangleRec(rect1, r1Color);
-			DrawRectangleRec(rect2, r2Color);
 
 			DrawText("Click to grab and drag polygons.", 32, 32, 24, WHITE);
 			DrawText("Scroll mouse wheel to resize current polygon.", 32, 64, 24, WHITE);
@@ -213,4 +175,104 @@ int main() {
 	}
 
 	return 0;
+}
+
+bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
+	bool result = false;
+	Polygon p1, p2;
+
+	p1 = scalePolygon(obj1.shape, obj1.scale);
+	p1 = rotatePolygon(p1, obj1.rotation);
+
+	p2 = scalePolygon(obj2.shape, obj2.scale);
+	p2 = rotatePolygon(p2, obj2.rotation);
+
+	switch (obj1.type) {
+		// obj1 is a circle
+		case circle: {
+			switch (obj2.type) {
+				case circle:
+					result = collib2d_check_circles(obj1.position.x, obj1.position.y, obj1.scale, 
+													obj2.position.x, obj2.position.y, obj2.scale, 
+													&overlap->x, &overlap->y);
+					break;
+				case rectangle:{
+					// Translate rect to match most likely buggy SAT collision
+					Vector2 rPos = Vector2Subtract(obj2.position, p2.vertices[2]);
+					result = collib2d_check_circle_rect(obj1.position.x, obj1.position.y, obj1.scale, 
+														rPos.x, rPos.y, p2.vertices[1].x, p2.vertices[3].y,
+														&overlap->x, &overlap->y);
+				}
+
+					break;
+				case polygon: {
+					p1 = generatePolygon(MAX_POLY_SIDES); // circle
+					p1 = scalePolygon(p1, obj1.scale);
+
+					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+				} break;
+				
+				default:
+					break;
+			}
+		} break;
+		
+		// obj1 is a rectangle
+		case rectangle: {
+			switch (obj2.type) {
+				case circle: {
+					// Translate rect to match most likely buggy SAT collision
+					Vector2 rPos = Vector2Subtract(obj1.position, p1.vertices[2]);
+
+					result = collib2d_check_circle_rect(obj2.position.x, obj2.position.y, obj2.scale, 
+														rPos.x, rPos.y, p1.vertices[1].x, p1.vertices[3].y,
+														&overlap->x, &overlap->y);
+					*overlap = Vector2Scale(*overlap, -1.0f);
+				} break;
+				
+				case rectangle:{
+					// Translate rect to match most likely buggy SAT collision
+					Vector2 pos1 = Vector2Subtract(obj1.position, p1.vertices[2]);
+					Vector2 pos2 = Vector2Subtract(obj2.position, p2.vertices[2]);
+
+					result = collib2d_check_rects(	pos1.x, pos1.y, p1.vertices[1].x, p1.vertices[3].y, 
+													pos2.x, pos2.y, p2.vertices[1].x, p2.vertices[3].y,
+													&overlap->x, &overlap->y);
+				} break;
+				case polygon: {
+					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+				} break;
+				
+				default:
+					break;
+			}
+		} break;
+		
+		//obj1 is a polygon
+		case polygon: {
+			switch (obj2.type) {
+				case circle: {
+					p2 = generatePolygon(MAX_POLY_SIDES); // circle
+					p2 = scalePolygon(p2, obj2.scale);
+
+					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+				}
+					break;
+				case rectangle: {
+					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+				} break;
+				
+				case polygon: {				
+					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+				} break;
+				default:
+					break;
+			}
+		} break;
+		
+		default:
+			break;
+	}
+
+	return result;
 }

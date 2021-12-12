@@ -16,6 +16,10 @@ void logPolyVerts(Polygon p) {
 }
 
 void drawPolygon(Vector2 v, Polygon p, Color c) {
+	if (p.vertCount < 2) {
+		TraceLog(LOG_WARNING, "Polygon has less than 2 verts and was not drawn");
+		return;
+	}
 	p = translatePolygon(p, v);
 
 	DrawLineStrip(p.vertices, p.vertCount, c);

@@ -1,7 +1,9 @@
 #include "raylib.h"
 
+#define MAX_POLY_SIDES 12
+
 typedef struct Polygon {
-	Vector2 vertices[12];
+	Vector2 vertices[MAX_POLY_SIDES];
 	int vertCount;
 } Polygon;
 
