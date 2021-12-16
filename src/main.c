@@ -22,6 +22,7 @@ typedef struct Object {
 
 float normalizeDegrees(float degrees);
 bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap);
+static void drawObjectLabel(Vector2 pos, int type);
 
 static Vector2 getRandomScreenCoords() {
 	Vector2 result = {GetRandomValue(0, SCREEN_WIDTH), GetRandomValue(0, SCREEN_HEIGHT)};
@@ -106,10 +107,14 @@ int main() {
 	while(!WindowShouldClose()) {
 
 		Vector2 mousePosition = GetMousePosition();
+		Vector2 overlap = {0};
 
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 			for (int i = 0; i < arrayLength(objects); i++) {
-				if (CheckCollisionPointCircle(mousePosition, objects[i].position, objects[i].scale)) {
+				if (collib2d_check_point_circle(mousePosition.x, mousePosition.y, 
+												objects[i].position.x, objects[i].position.y, objects[i].scale, 
+												&overlap.x, &overlap.y)) {
+					objects[i].position = Vector2Add(objects[i].position, overlap);
 					shapeGrabbed = i;
 					break;
 				}
@@ -119,8 +124,6 @@ int main() {
 		if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) || !IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
 			shapeGrabbed = -1;
 		}
-
-		Vector2 overlap;
 		
 		if (shapeGrabbed >= 0) { // Polygons
 			objects[shapeGrabbed].position = mousePosition;
@@ -132,40 +135,34 @@ int main() {
 		BeginDrawing();
 			ClearBackground((Color){0,0,0,255});
 			Polygon p = {0};
-			Polygon p2 = {0};
 			for (int i = 0; i < arrayLength(objects); i++) {
 				Color color = (shapeGrabbed == i) ? YELLOW : WHITE;
-				
-				p = objects[i].shape;
-				p = rotatePolygon(p, objects[i].rotation);
-				p = scalePolygon(p, objects[i].scale);
 
 				for (int e = 0; e < arrayLength(objects); e++) {
 					if (e == i) continue;
-
-//					p2 = objects[e].shape;
-//					p2 = rotatePolygon(p2, objects[e].rotation);
-//					p2 = scalePolygon(p2, objects[e].scale);
-
 					overlap = (Vector2){0};
 					
-//					bool hit = polygonIntersect(objects[i].position, p, objects[e].position, p2, &overlap);
 					bool hit = checkObjectCollision(objects[i], objects[e], &overlap);
 
 					if (hit) {
 						color = RED;
 						if (i == shapeGrabbed) break;
 						objects[i].position = Vector2Subtract(objects[i].position, overlap);
+						TraceLog(LOG_INFO, "overlap.x: %f, overlap.y: %f\n", overlap.x, overlap.y);
 					}
 				}
 
 				if (objects[i].type == circle) {
 					DrawCircle(objects[i].position.x, objects[i].position.y, objects[i].scale, color);
 				} else {
-					// Why is the x axis flipped?
+					p = objects[i].shape;
+					p = rotatePolygon(p, objects[i].rotation);
+					p = scalePolygon(p, objects[i].scale);
+					// Why is this flipped 180 degrees?
 					p = rotatePolygon(p, 180);
 					drawPolygon(objects[i].position, p, color);
 				}
+				drawObjectLabel(objects[i].position, objects[i].type);
 			}
 
 			DrawText("Click to grab and drag polygons.", 32, 32, 24, WHITE);
@@ -175,6 +172,22 @@ int main() {
 	}
 
 	return 0;
+}
+
+static void drawObjectLabel(Vector2 pos, int type) {
+	switch(type) {
+		case circle:
+			DrawText("Circle", pos.x, pos.y, 16, WHITE);
+			break;
+		case rectangle:
+			DrawText("Rectangle", pos.x, pos.y, 16, WHITE);
+			break;
+		case polygon:
+			DrawText("Polygon", pos.x, pos.y, 16, WHITE);
+			break;
+		default:
+			break;
+	}
 }
 
 bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
