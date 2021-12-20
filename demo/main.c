@@ -20,7 +20,6 @@ typedef struct Object {
 	bool hit;
 } Object;
 
-float normalizeDegrees(float degrees);
 bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap);
 static void drawObjectLabel(Vector2 pos, int type);
 
@@ -32,17 +31,16 @@ static Vector2 getRandomScreenCoords() {
 int main() {
 
 	Polygon triangle = generatePolygon(3);
-	Polygon square = { 	
-		.vertices = { {0, 0}, {1, 0}, {1, 1}, {0, 1} },
-		.vertCount = 4,
-	};
-	Polygon rect = { 	
-		.vertices = { {0, 0}, {1, 0}, {1, 0.5f}, {0, 0.5f} },
-		.vertCount = 4,
-	};
+
+	Polygon square = generatePolygon(4);
+	square = rotatePolygon(square, 45);
+	Polygon rect = square;
+
 	Polygon pentagon = generatePolygon(5);
 	pentagon = rotatePolygon(pentagon, -90);
+
 	Polygon hexagon = generatePolygon(6);
+	
 	Polygon octagon = generatePolygon(8);
 
 	Object objects[] = {
@@ -148,7 +146,7 @@ int main() {
 						color = RED;
 						if (i == shapeGrabbed) break;
 						objects[i].position = Vector2Subtract(objects[i].position, overlap);
-						TraceLog(LOG_INFO, "overlap.x: %f, overlap.y: %f\n", overlap.x, overlap.y);
+						//TraceLog(LOG_INFO, "overlap.x: %f, overlap.y: %f\n", overlap.x, overlap.y);
 					}
 				}
 
@@ -211,9 +209,9 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 					break;
 				case rectangle:{
 					// Translate rect to match most likely buggy SAT collision
-					Vector2 rPos = Vector2Subtract(obj2.position, p2.vertices[2]);
+					Rectangle rect = polyToRect(obj2.position, p2);
 					result = collib2d_check_circle_rect(obj1.position.x, obj1.position.y, obj1.scale, 
-														rPos.x, rPos.y, p2.vertices[1].x, p2.vertices[3].y,
+														rect.x, rect.y, rect.width, rect.height,
 														&overlap->x, &overlap->y);
 				}
 
@@ -222,7 +220,10 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 					p1 = generatePolygon(MAX_POLY_SIDES); // circle
 					p1 = scalePolygon(p1, obj1.scale);
 
-					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+					//result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+					result = collib2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
+													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
+													&overlap->x, &overlap->y);
 				} break;
 				
 				default:
@@ -234,26 +235,27 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 		case rectangle: {
 			switch (obj2.type) {
 				case circle: {
-					// Translate rect to match most likely buggy SAT collision
-					Vector2 rPos = Vector2Subtract(obj1.position, p1.vertices[2]);
+					Rectangle rect = polyToRect(obj1.position, p1);
 
 					result = collib2d_check_circle_rect(obj2.position.x, obj2.position.y, obj2.scale, 
-														rPos.x, rPos.y, p1.vertices[1].x, p1.vertices[3].y,
+														rect.x, rect.y, rect.width, rect.height,
 														&overlap->x, &overlap->y);
-					*overlap = Vector2Scale(*overlap, -1.0f);
+					*overlap = Vector2Scale(*overlap, -1.0f); // Flip the overlap, because the circle is the second object
 				} break;
 				
 				case rectangle:{
-					// Translate rect to match most likely buggy SAT collision
-					Vector2 pos1 = Vector2Subtract(obj1.position, p1.vertices[2]);
-					Vector2 pos2 = Vector2Subtract(obj2.position, p2.vertices[2]);
+					Rectangle rect1 = polyToRect(obj1.position, p1);
+					Rectangle rect2 = polyToRect(obj2.position, p2);
 
-					result = collib2d_check_rects(	pos1.x, pos1.y, p1.vertices[1].x, p1.vertices[3].y, 
-													pos2.x, pos2.y, p2.vertices[1].x, p2.vertices[3].y,
+					result = collib2d_check_rects(	rect1.x, rect1.y, rect1.width, rect1.height, 
+													rect2.x, rect2.y, rect2.width, rect2.height,
 													&overlap->x, &overlap->y);
 				} break;
 				case polygon: {
-					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+//					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+					result = collib2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
+													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
+													&overlap->x, &overlap->y);
 				} break;
 				
 				default:
@@ -268,15 +270,21 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 					p2 = generatePolygon(MAX_POLY_SIDES); // circle
 					p2 = scalePolygon(p2, obj2.scale);
 
-					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+					result = collib2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
+													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
+													&overlap->x, &overlap->y);
 				}
 					break;
 				case rectangle: {
-					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+					result = collib2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
+													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
+													&overlap->x, &overlap->y);
 				} break;
 				
 				case polygon: {				
-					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
+					result = collib2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
+													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
+													&overlap->x, &overlap->y);
 				} break;
 				default:
 					break;

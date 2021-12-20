@@ -1,2 +1,2 @@
 @echo off
-gcc src\main.c src\polygon.c src\collib2d.c -o ..\build\sat-2d.exe -I external\include -L external\lib -lraylib -lopengl32 -lgdi32 -lwinmm
+gcc demo\main.c demo\polygon.c src\collib2d.c -o demo\bin\collib2d-demo.exe -I external\include -I src -L external\lib -lraylib -lopengl32 -lgdi32 -lwinmm

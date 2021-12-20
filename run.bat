@@ -1,4 +1,2 @@
 @echo off
-pushd ..\build
-sat-2d.exe
-popd
+demo\bin\collib2d-demo.exe
