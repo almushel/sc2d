@@ -9,3 +9,4 @@ bool collib2d_check_circle_rect(float cx, float cy, float cr, float rx, float ry
 bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int p1_vert_count, 
 							float p2_pos_x, float p2_pos_y, float* p2_verts, int p2_vert_count, 
 							float* overlap_x, float* overlap_y);
+bool collib2d_check_point_poly2d(float point_x, float point_y, float* poly_verts, int vert_count);

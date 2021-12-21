@@ -219,7 +219,6 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 		float distance = fmin(p1Projection.max, p2Projection.max) - fmax(p1Projection.min, p2Projection.min);
 		if (distance < minDistance) {
 			minDistance = distance;
-//			*overlap = Vector2Scale(axis, offset > 0 ? 1 : -1);
 			*overlap_x = axis_x * (float)(1 - 2 * (int)(offset < 0) );
 			*overlap_y = axis_y * (float)(1 - 2 * (int)(offset < 0) );
 		}
@@ -252,6 +251,23 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 
 	*overlap_x *= minDistance;
 	*overlap_y *= minDistance;
+
+	return result;
+}
+
+bool collib2d_check_point_poly2d(float point_x, float point_y, float* poly_verts, int vert_count) {
+	bool result = false;
+
+	for (int i = 0, j = vert_count - 2; i < vert_count; i += 2) {
+		if ( (poly_verts[i + 1] >= point_y) != (poly_verts[j + 1] >= point_y) &&
+			 (point_x < (poly_verts[j] - poly_verts[i]) * (point_y - poly_verts[i + 1]) / (poly_verts[j + 1] - poly_verts[i + 1]) + poly_verts[i])
+			) {
+			
+			result = !result;
+		}
+
+		j = i;
+	}
 
 	return result;
 }

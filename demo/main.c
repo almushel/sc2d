@@ -36,6 +36,7 @@ int main() {
 	square = rotatePolygon(square, 45);
 	Polygon rect = square;
 
+	// BUG: Pentagon collision still wrong even after 180 degree rotation
 	Polygon pentagon = generatePolygon(5);
 	pentagon = rotatePolygon(pentagon, -90);
 
@@ -109,10 +110,19 @@ int main() {
 
 		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 			for (int i = 0; i < arrayLength(objects); i++) {
-				if (collib2d_check_point_circle(mousePosition.x, mousePosition.y, 
-												objects[i].position.x, objects[i].position.y, objects[i].scale, 
-												&overlap.x, &overlap.y)) {
-					objects[i].position = Vector2Add(objects[i].position, overlap);
+				bool hit = false;
+				if (objects[i].type == circle) {
+					hit = collib2d_check_point_circle(mousePosition.x, mousePosition.y, objects[i].position.x, objects[i].position.y, objects[i].scale, &overlap.x, &overlap.y);
+
+				} else {
+					Polygon p = rotatePolygon(objects[i].shape, objects[i].rotation);
+					p = scalePolygon(p, objects[i].scale);
+					p = translatePolygon(p, objects[i].position);
+					hit = collib2d_check_point_poly2d(mousePosition.x, mousePosition.y, (float*)p.vertices, p.vertCount * 2, &overlap.x, &overlap.y);
+				}
+
+				if (hit) {
+					//objects[i].position = Vector2Add(objects[i].position, overlap);
 					shapeGrabbed = i;
 					break;
 				}
@@ -153,8 +163,7 @@ int main() {
 				if (objects[i].type == circle) {
 					DrawCircle(objects[i].position.x, objects[i].position.y, objects[i].scale, color);
 				} else {
-					p = objects[i].shape;
-					p = rotatePolygon(p, objects[i].rotation);
+					p = rotatePolygon(objects[i].shape, objects[i].rotation);
 					p = scalePolygon(p, objects[i].scale);
 					// Why is this flipped 180 degrees?
 					p = rotatePolygon(p, 180);
@@ -252,7 +261,6 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 													&overlap->x, &overlap->y);
 				} break;
 				case polygon: {
-//					result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
 					result = collib2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
 													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
 													&overlap->x, &overlap->y);
