@@ -98,11 +98,11 @@ bool collib2d_check_circle_centered_rect(float cx, float cy, float cr, float rx,
 		float clamp_x = fmin(fmax(delta_x, -rw), rw);
 		float clamp_y = fmin(fmax(delta_y, -rh), rh);
 	
-		// Get a vector point from the center of circle to center of rect
+		// Get a vector pointing from the center of circle to center of rect
 		delta_x = rx - cx;
 		delta_y = ry - cy;
 
-		// Get vector point from circle center to collision point?
+		// Get vector pointing from circle center to collision point
 		clamp_x += delta_x;
 		clamp_y += delta_y;
 
@@ -185,12 +185,11 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 							float* overlap_x, float* overlap_y) {
 
 	// p1_verts & p2_verts: float array of x/y pairs (vector2)
+	// p1_vert_Count & p2_vert_count: total number of float values (vec2 * 2)
 
 	bool result = true;
-	range p1Projection, p2Projection;
+	range p1_projection, p2_projection;
 	float axis_x, axis_y;
-	float* vert_x; 
-	float* vert_y;
 
 	float delta_x = p2_pos_x - p1_pos_x;
 	float delta_y = p2_pos_y - p1_pos_y;
@@ -199,49 +198,47 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 
 	// First polygon
 	for (int i = 0; i < p1_vert_count; i += 2) {
-		vert_x = p1_verts + i;
-		vert_y = vert_x + 1;
-
-		get_poly2d_edge(p1_verts, p1_vert_count, i, &axis_x, &axis_y);
-		v2_normal(&axis_x, &axis_y, true);
+		get_poly2d_edge(p1_verts, p1_vert_count, i, &axis_x, &axis_y); // Get vector pointing from curent vertex to next vertex (edge)
+		v2_normal(&axis_x, &axis_y, false); // Get the normal of the edge (vector perpendicular to the edge)
 		v2_normalize(&axis_x, &axis_y);
-		offset = (axis_x * delta_x), + (axis_y * delta_y); // dot product
+		offset = (axis_x * delta_x) + (axis_y * delta_y); // project the the vector between polygon positions to the axis (dot product)
 
-		p1Projection = project_poly2d_to_axis(axis_x, axis_y, p1_verts, p1_vert_count);
-		p1Projection.min += offset;
-		p1Projection.max += offset;
-		p2Projection = project_poly2d_to_axis(axis_x, axis_y, p2_verts, p2_vert_count);
+		p1_projection = project_poly2d_to_axis(axis_x, axis_y, p1_verts, p1_vert_count); // project every vertex in first polygon to current axis
+		p2_projection = project_poly2d_to_axis(axis_x, axis_y, p2_verts, p2_vert_count); // project every vertex in scond polygon to current axis
 		
-		if ( (p1Projection.min > p2Projection.max) || (p1Projection.max < p2Projection.min)) {
+		p1_projection.min -= offset; // Add position offset to projection
+		p1_projection.max -= offset;
+		
+		if ( (p1_projection.min > p2_projection.max) || (p1_projection.max < p2_projection.min)) { // If the ranges do not overlap, polygons are not touching
 			return false;
 		}
 		
-		float distance = fmin(p1Projection.max, p2Projection.max) - fmax(p1Projection.min, p2Projection.min);
-		if (distance < minDistance) {
+		float distance = fmin(p1_projection.max, p2_projection.max) - fmax(p1_projection.min, p2_projection.min);
+		if (distance < minDistance) { // Update minimum distance for overlap
 			minDistance = distance;
 			*overlap_x = axis_x * (float)(1 - 2 * (int)(offset < 0) );
 			*overlap_y = axis_y * (float)(1 - 2 * (int)(offset < 0) );
 		}
 	}
 
-	// Second Polygon
-	for (int i = 0; i < p2_vert_count; i++) {
+	// Project all vertices to all axes of the second polygon
+	for (int i = 0; i < p2_vert_count; i += 2) {
 		get_poly2d_edge(p2_verts, p2_vert_count, i, &axis_x, &axis_y);
-		v2_normal(&axis_x, &axis_y, true);
+		v2_normal(&axis_x, &axis_y, false);
 		v2_normalize(&axis_x, &axis_y);
 		offset = (axis_x * delta_x) + (axis_y * delta_y);
 
-		p1Projection = project_poly2d_to_axis(axis_x, axis_y, p1_verts, p1_vert_count);
-		p1Projection.min += offset;
-		p1Projection.max += offset;
-		p2Projection = project_poly2d_to_axis(axis_x, axis_y, p2_verts, p2_vert_count);
+		p1_projection = project_poly2d_to_axis(axis_x, axis_y, p1_verts, p1_vert_count);
+		p2_projection = project_poly2d_to_axis(axis_x, axis_y, p2_verts, p2_vert_count);
 		
-		if ( (p1Projection.min > p2Projection.max) || (p1Projection.max < p2Projection.min)) {
+		p1_projection.min -= offset;
+		p1_projection.max -= offset;
+		
+		if ( (p1_projection.min > p2_projection.max) || (p1_projection.max < p2_projection.min)) {
 			return false;
 		}
-		
 
-		float distance = fmin(p1Projection.max, p2Projection.max) - fmax(p1Projection.min, p2Projection.min);
+		float distance = fmin(p1_projection.max, p2_projection.max) - fmax(p1_projection.min, p2_projection.min);
 		if (distance < minDistance) {
 			minDistance = distance;
 			*overlap_x = axis_x * (float)(1 - 2 * (int)(offset < 0) );

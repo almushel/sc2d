@@ -118,7 +118,7 @@ int main() {
 					Polygon p = rotatePolygon(objects[i].shape, objects[i].rotation);
 					p = scalePolygon(p, objects[i].scale);
 					p = translatePolygon(p, objects[i].position);
-					hit = collib2d_check_point_poly2d(mousePosition.x, mousePosition.y, (float*)p.vertices, p.vertCount * 2, &overlap.x, &overlap.y);
+					hit = collib2d_check_point_poly2d(mousePosition.x, mousePosition.y, (float*)p.vertices, p.vertCount * 2);
 				}
 
 				if (hit) {
@@ -165,8 +165,6 @@ int main() {
 				} else {
 					p = rotatePolygon(objects[i].shape, objects[i].rotation);
 					p = scalePolygon(p, objects[i].scale);
-					// Why is this flipped 180 degrees?
-					p = rotatePolygon(p, 180);
 					drawPolygon(objects[i].position, p, color);
 				}
 				drawObjectLabel(objects[i].position, objects[i].type);
@@ -216,8 +214,7 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 													obj2.position.x, obj2.position.y, obj2.scale, 
 													&overlap->x, &overlap->y);
 					break;
-				case rectangle:{
-					// Translate rect to match most likely buggy SAT collision
+				case rectangle: {
 					Rectangle rect = polyToRect(obj2.position, p2);
 					result = collib2d_check_circle_rect(obj1.position.x, obj1.position.y, obj1.scale, 
 														rect.x, rect.y, rect.width, rect.height,
@@ -229,7 +226,6 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 					p1 = generatePolygon(MAX_POLY_SIDES); // circle
 					p1 = scalePolygon(p1, obj1.scale);
 
-					//result = polygonIntersect(obj1.position, p1, obj2.position, p2, overlap);
 					result = collib2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
 													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
 													&overlap->x, &overlap->y);
