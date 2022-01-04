@@ -5,13 +5,14 @@
 
 typedef struct range { float min, max; } range;
 
+// Check for collion between a point and a circle and return penetration by reference
 bool collib2d_check_point_circle(float px, float py, float cx, float cy, float cr, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
 	float delta_x = cx - px;
 	float delta_y = cy - py;
 
-	float delta_m = hypot(delta_x, delta_y);
+	float delta_m = hypotf(delta_x, delta_y);
 	float delta_r =  cr - delta_m;
 
 	if (result = delta_r > 0) {
@@ -22,6 +23,7 @@ bool collib2d_check_point_circle(float px, float py, float cx, float cy, float c
 	return result;
 }
 
+// Check for collision between a point and a rectangle (left x, top y, width, height) and return penetration by reference
 bool collib2d_check_point_rect(float px, float py, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
@@ -34,10 +36,10 @@ bool collib2d_check_point_rect(float px, float py, float rx, float ry, float rw,
 	float delta_x = rect_center_x - px;
 	float delta_y = rect_center_y - py;
 
-	if (result = (fabs(delta_x) < rect_center_width && fabs(delta_y) < rect_center_height) ) {
+	if (result = (fabsf(delta_x) < rect_center_width && fabsf(delta_y) < rect_center_height) ) {
 		
-		*overlap_x = (rect_center_width - fabs(delta_x));
-		*overlap_y = (rect_center_height - fabs(delta_y));
+		*overlap_x = (rect_center_width - fabsf(delta_x));
+		*overlap_y = (rect_center_height - fabsf(delta_y));
 
 		*overlap_x *= (float)(int)(*overlap_x < *overlap_y);
 		*overlap_y *= (float)(int)(*overlap_x == 0);
@@ -48,12 +50,13 @@ bool collib2d_check_point_rect(float px, float py, float rx, float ry, float rw,
 	return result;
 }
 
+// Check for collion between two circles and return overlap by reference
 bool collib2d_check_circles(float x1, float y1, float r1, float x2, float y2, float r2, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
 	float delta_x = x2 - x1;
 	float delta_y = y2 - y1;
-	float magnitude = hypot(delta_x, delta_y);
+	float magnitude = hypotf(delta_x, delta_y);
 	float overlap = (r1 + r2) - magnitude;
 
 	if (result = overlap > 0) {
@@ -64,6 +67,7 @@ bool collib2d_check_circles(float x1, float y1, float r1, float x2, float y2, fl
 	return result;
 }
 
+//Check for collision between to rectangles (left x, top y, width, height) and return overlap by reference
 bool collib2d_check_rects(float x1, float y1, float w1, float h1, float x2, float y2, float w2, float h2, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
@@ -77,13 +81,14 @@ bool collib2d_check_rects(float x1, float y1, float w1, float h1, float x2, floa
 		if (x2 < x1) *overlap_x *= -1;
 		if (y2 < y1) *overlap_y *= -1;
 
-		*overlap_x *= (float)(int)(fabs(*overlap_x) < fabs(*overlap_y));
+		*overlap_x *= (float)(int)(fabsf(*overlap_x) < fabsf(*overlap_y));
 		*overlap_y *= (float)(int)(*overlap_x == 0);
 	}
 
 	return result;
 }
 
+// Check for collision of circle and centered rectangle (center x, centery, width, height) and return overlap by reference
 bool collib2d_check_circle_centered_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
@@ -91,12 +96,12 @@ bool collib2d_check_circle_centered_rect(float cx, float cy, float cr, float rx,
 	float delta_x = cx - rx;
 	float delta_y = cy - ry;
 
-	if ( fabs(delta_x) > (cr + rw) || fabs(delta_y) > (cr + rh)) {
+	if ( fabsf(delta_x) > (cr + rw) || fabsf(delta_y) > (cr + rh)) {
 		result = false;
 	} else {
 		//Get intersection point of vector and nearest rect edge relative to the center of the rectangle
-		float clamp_x = fmin(fmax(delta_x, -rw), rw);
-		float clamp_y = fmin(fmax(delta_y, -rh), rh);
+		float clamp_x = fminf(fmaxf(delta_x, -rw), rw);
+		float clamp_y = fminf(fmaxf(delta_y, -rh), rh);
 	
 		// Get a vector pointing from the center of circle to center of rect
 		delta_x = rx - cx;
@@ -106,7 +111,7 @@ bool collib2d_check_circle_centered_rect(float cx, float cy, float cr, float rx,
 		clamp_x += delta_x;
 		clamp_y += delta_y;
 
-		float magnitude = hypot(clamp_x, clamp_y);
+		float magnitude = hypotf(clamp_x, clamp_y);
 
 		// TO-DO: Handle containment
 		if (magnitude == 0.0f) magnitude = 1.0f; //Hack to avoid divide by zero when circle is inside rect
@@ -120,6 +125,7 @@ bool collib2d_check_circle_centered_rect(float cx, float cy, float cr, float rx,
 	return result;
 }
 
+// Check for collision between circle and rectangle (left x, top y, width, height) and return overlap vector by reference
 bool collib2d_check_circle_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
@@ -134,6 +140,7 @@ bool collib2d_check_circle_rect(float cx, float cy, float cr, float rx, float ry
 	return result;
 }
 
+// Project all points in polygon to 2D vector axis (dot product)
 static range project_poly2d_to_axis(float axis_x, float axis_y, float* poly_verts, int poly_vert_count) {
 	range result = {0};
 
@@ -141,13 +148,14 @@ static range project_poly2d_to_axis(float axis_x, float axis_y, float* poly_vert
 		float* vert_x = (poly_verts + i);
 		float* vert_y = vert_x + 1;
 		float dot = (axis_x * *vert_x) + (axis_y * *vert_y); // dot product
-		result.min = fmin(result.min, dot);
-		result.max = fmax(result.max, dot);
+		result.min = fminf(result.min, dot);
+		result.max = fmaxf(result.max, dot);
 	}
 
 	return result;
 }
 
+// Get vector from start index to next vertex in polygon
 static void get_poly2d_edge(float* poly_verts, int vert_count, int startIndex, float* edge_x, float* edge_y) {
 	float start_x, start_y;
 	float end_x, end_y;
@@ -164,6 +172,7 @@ static void get_poly2d_edge(float* poly_verts, int vert_count, int startIndex, f
 	*edge_y = end_y - start_y;
 }
 
+// Get clockwise or counterclockwise normal of 2D vector
 static void v2_normal(float* vx, float* vy, bool clockwise) {
 	float temp;
 
@@ -172,14 +181,16 @@ static void v2_normal(float* vx, float* vy, bool clockwise) {
 	*vy  = temp * (float)(1 - (2 * (int)(clockwise) ));
 }
 
+// Normalize 2d vector
 static void v2_normalize(float* vx, float* vy) {
 	float magnitude;
 
-	magnitude = hypot(*vx, *vy);
+	magnitude = hypotf(*vx, *vy);
 	*vx /= magnitude;
 	*vy /= magnitude;
 }
 
+// Check for collision between two convex polygons and return shortest axis overlap by reference
 bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int p1_vert_count, 
 							float p2_pos_x, float p2_pos_y, float* p2_verts, int p2_vert_count, 
 							float* overlap_x, float* overlap_y) {
@@ -194,7 +205,7 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 	float delta_x = p2_pos_x - p1_pos_x;
 	float delta_y = p2_pos_y - p1_pos_y;
 	float offset = 0;
-	float minDistance = INFINITY;
+	float min_distance = INFINITY;
 
 	// First polygon
 	for (int i = 0; i < p1_vert_count; i += 2) {
@@ -213,9 +224,9 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 			return false;
 		}
 		
-		float distance = fmin(p1_projection.max, p2_projection.max) - fmax(p1_projection.min, p2_projection.min);
-		if (distance < minDistance) { // Update minimum distance for overlap
-			minDistance = distance;
+		float distance = fminf(p1_projection.max, p2_projection.max) - fmaxf(p1_projection.min, p2_projection.min);
+		if (distance < min_distance) { // Update minimum distance for overlap
+			min_distance = distance;
 			*overlap_x = axis_x * (float)(1 - 2 * (int)(offset < 0) );
 			*overlap_y = axis_y * (float)(1 - 2 * (int)(offset < 0) );
 		}
@@ -238,20 +249,21 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 			return false;
 		}
 
-		float distance = fmin(p1_projection.max, p2_projection.max) - fmax(p1_projection.min, p2_projection.min);
-		if (distance < minDistance) {
-			minDistance = distance;
+		float distance = fminf(p1_projection.max, p2_projection.max) - fmaxf(p1_projection.min, p2_projection.min);
+		if (distance < min_distance) {
+			min_distance = distance;
 			*overlap_x = axis_x * (float)(1 - 2 * (int)(offset < 0) );
 			*overlap_y = axis_y * (float)(1 - 2 * (int)(offset < 0) );
 		}
 	}
 
-	*overlap_x *= minDistance;
-	*overlap_y *= minDistance;
+	*overlap_x *= min_distance;
+	*overlap_y *= min_distance;
 
 	return result;
 }
 
+// Check for collision between point and convex polygon
 bool collib2d_check_point_poly2d(float point_x, float point_y, float* poly_verts, int vert_count) {
 	bool result = false;
 
@@ -264,6 +276,45 @@ bool collib2d_check_point_poly2d(float point_x, float point_y, float* poly_verts
 		}
 
 		j = i;
+	}
+
+	return result;
+}
+
+// Check for collision between point and line or line segment
+bool collib2d_check_point_line_intersect(float point_x, float point_y,
+										 float line_start_x, float line_start_y, float line_end_x, float line_end_y,
+										 bool segment) {
+
+	bool result = false;
+
+	// Vector pointing from line start to line end
+	float line_x = line_end_x - line_start_x;
+	float line_y = line_end_y - line_start_y;
+	float line_length = hypotf(line_y, line_x);
+
+	// Vector point from line start to point
+	float point_delta_x = point_x - line_start_x;
+	float point_delta_y = point_y - line_start_y;
+	float distance_to_point = hypotf(point_delta_x, point_delta_y);
+
+	// If the angles of both vectors are equal,
+	// then the point is on the ray starting at line_start
+	if (atan2(line_y, line_x) == atan2(point_delta_y, point_delta_x)) {
+		// if the distance to the point is less than or equal to line length,
+		// then the point is on the segment line_start -> line_end
+		if (segment && (distance_to_point <= line_length) ) {
+			result = true;
+		// Else line_start->line_end describes an (infinite) line or a ray
+		} else {
+			result = true;
+		}
+	// If the angle of the line pointing in the opposite direction is equal
+	// angle from line_start to the point,
+	// then the point is still on the (infinite) line defined by line_start and line_end
+	// but not the segment or ray defined by line_start and line_end
+	} else if (!segment && (atan2(-line_x, -line_y) == atan2(point_delta_y, point_delta_x)) ) {
+		result = true;
 	}
 
 	return result;
