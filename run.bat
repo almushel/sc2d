@@ -1,2 +1,2 @@
 @echo off
-demo\bin\collib2d-demo.exe
+bin\sc2d-demo.exe

@@ -1,12 +1,30 @@
+// Simple Collision 2D
+// A single header 2D collision library
+
+#ifndef SIMPLE_COLLISION_2D_IMPLEMENTATION
+
+bool sc2d_check_point_circle(float px, float py, float cx, float cy, float cr, float* overlap_x, float* overlap_y);
+bool sc2d_check_point_rect(float px, float py, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y);
+bool sc2d_check_circles(float x1, float y1, float r1, float x2, float y2, float r2, float* overlap_x, float* overlap_y);
+bool sc2d_check_rects(float x1, float y1, float w1, float h1, float x2, float y2, float w2, float h2, float* overlap_x, float* overlap_y);
+bool sc2d_check_circle_centered_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y);
+bool sc2d_check_circle_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y);
+
+bool sc2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int p1_vert_count, 
+							float p2_pos_x, float p2_pos_y, float* p2_verts, int p2_vert_count, 
+							float* overlap_x, float* overlap_y);
+bool sc2d_check_point_poly2d(float point_x, float point_y, float* poly_verts, int vert_count);
+bool sc2d_check_point_line_intersect(float point_x, float point_y, float line_start_x, float line_start_y, float line_end_x, float line_end_y, bool segment);
+
+#else
+
 #include <math.h>
 #include <stdbool.h>
 
-#define sign(num) (num > 0.0f) ? 1.0f : -1.0f
-
-typedef struct range { float min, max; } range;
+typedef struct sc2d_range { float min, max; } sc2d_range;
 
 // Check for collion between a point and a circle and return penetration by reference
-bool collib2d_check_point_circle(float px, float py, float cx, float cy, float cr, float* overlap_x, float* overlap_y) {
+bool sc2d_check_point_circle(float px, float py, float cx, float cy, float cr, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
 	float delta_x = cx - px;
@@ -24,7 +42,7 @@ bool collib2d_check_point_circle(float px, float py, float cx, float cy, float c
 }
 
 // Check for collision between a point and a rectangle (left x, top y, width, height) and return penetration by reference
-bool collib2d_check_point_rect(float px, float py, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
+bool sc2d_check_point_rect(float px, float py, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
 	float rect_center_width = rw/2.0f;
@@ -51,7 +69,7 @@ bool collib2d_check_point_rect(float px, float py, float rx, float ry, float rw,
 }
 
 // Check for collion between two circles and return overlap by reference
-bool collib2d_check_circles(float x1, float y1, float r1, float x2, float y2, float r2, float* overlap_x, float* overlap_y) {
+bool sc2d_check_circles(float x1, float y1, float r1, float x2, float y2, float r2, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
 	float delta_x = x2 - x1;
@@ -68,7 +86,7 @@ bool collib2d_check_circles(float x1, float y1, float r1, float x2, float y2, fl
 }
 
 //Check for collision between to rectangles (left x, top y, width, height) and return overlap by reference
-bool collib2d_check_rects(float x1, float y1, float w1, float h1, float x2, float y2, float w2, float h2, float* overlap_x, float* overlap_y) {
+bool sc2d_check_rects(float x1, float y1, float w1, float h1, float x2, float y2, float w2, float h2, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
 	if (x1 < x2) 	*overlap_x = (x1 + w1) - x2;
@@ -89,7 +107,7 @@ bool collib2d_check_rects(float x1, float y1, float w1, float h1, float x2, floa
 }
 
 // Check for collision of circle and centered rectangle (center x, centery, width, height) and return overlap by reference
-bool collib2d_check_circle_centered_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
+bool sc2d_check_circle_centered_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
 	// Get a vector pointing from center of rect to center of circle
@@ -126,7 +144,7 @@ bool collib2d_check_circle_centered_rect(float cx, float cy, float cr, float rx,
 }
 
 // Check for collision between circle and rectangle (left x, top y, width, height) and return overlap vector by reference
-bool collib2d_check_circle_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
+bool sc2d_check_circle_rect(float cx, float cy, float cr, float rx, float ry, float rw, float rh, float* overlap_x, float* overlap_y) {
 	bool result = false;
 
 	float rect_center_width = rw/2.0f;
@@ -135,14 +153,14 @@ bool collib2d_check_circle_rect(float cx, float cy, float cr, float rx, float ry
 	float rect_center_x = rx + rect_center_width;
 	float rect_center_y = ry + rect_center_height;
 
-	result = collib2d_check_circle_centered_rect(cx, cy, cr, rect_center_x, rect_center_y, rect_center_width, rect_center_height, overlap_x, overlap_y);
+	result = sc2d_check_circle_centered_rect(cx, cy, cr, rect_center_x, rect_center_y, rect_center_width, rect_center_height, overlap_x, overlap_y);
 
 	return result;
 }
 
 // Project all points in polygon to 2D vector axis (dot product)
-static range project_poly2d_to_axis(float axis_x, float axis_y, float* poly_verts, int poly_vert_count) {
-	range result = {0};
+static sc2d_range project_poly2d_to_axis(float axis_x, float axis_y, float* poly_verts, int poly_vert_count) {
+	sc2d_range result = {0};
 
 	for (int i = 0; i < poly_vert_count; i += 2) {
 		float* vert_x = (poly_verts + i);
@@ -191,7 +209,7 @@ static void v2_normalize(float* vx, float* vy) {
 }
 
 // Check for collision between two convex polygons and return shortest axis overlap by reference
-bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int p1_vert_count, 
+bool sc2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int p1_vert_count, 
 							float p2_pos_x, float p2_pos_y, float* p2_verts, int p2_vert_count, 
 							float* overlap_x, float* overlap_y) {
 
@@ -199,7 +217,7 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 	// p1_vert_Count & p2_vert_count: total number of float values (vec2 * 2)
 
 	bool result = true;
-	range p1_projection, p2_projection;
+	sc2d_range p1_projection, p2_projection;
 	float axis_x, axis_y;
 
 	float delta_x = p2_pos_x - p1_pos_x;
@@ -264,7 +282,7 @@ bool collib2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int
 }
 
 // Check for collision between point and convex polygon
-bool collib2d_check_point_poly2d(float point_x, float point_y, float* poly_verts, int vert_count) {
+bool sc2d_check_point_poly2d(float point_x, float point_y, float* poly_verts, int vert_count) {
 	bool result = false;
 
 	for (int i = 0, j = vert_count - 2; i < vert_count; i += 2) {
@@ -282,7 +300,7 @@ bool collib2d_check_point_poly2d(float point_x, float point_y, float* poly_verts
 }
 
 // Check for collision between point and line or line segment
-bool collib2d_check_point_line_intersect(float point_x, float point_y,
+bool sc2d_check_point_line_intersect(float point_x, float point_y,
 										 float line_start_x, float line_start_y, float line_end_x, float line_end_y,
 										 bool segment) {
 
@@ -319,3 +337,5 @@ bool collib2d_check_point_line_intersect(float point_x, float point_y,
 
 	return result;
 }
+
+#endif
