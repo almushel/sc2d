@@ -14,7 +14,7 @@ bool sc2d_check_poly2d(	float p1_pos_x, float p1_pos_y, float* p1_verts, int p1_
 							float p2_pos_x, float p2_pos_y, float* p2_verts, int p2_vert_count, 
 							float* overlap_x, float* overlap_y);
 bool sc2d_check_point_poly2d(float point_x, float point_y, float* poly_verts, int vert_count);
-bool sc2d_check_point_line_intersect(float point_x, float point_y, float line_start_x, float line_start_y, float line_end_x, float line_end_y, bool segment);
+bool sc2d_check_point_line(float point_x, float point_y, float line_start_x, float line_start_y, float line_end_x, float line_end_y, bool segment);
 
 #else
 
@@ -300,7 +300,7 @@ bool sc2d_check_point_poly2d(float point_x, float point_y, float* poly_verts, in
 }
 
 // Check for collision between point and line or line segment
-bool sc2d_check_point_line_intersect(float point_x, float point_y,
+bool sc2d_check_point_line(float point_x, float point_y,
 										 float line_start_x, float line_start_y, float line_end_x, float line_end_y,
 										 bool segment) {
 

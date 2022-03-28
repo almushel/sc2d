@@ -32,10 +32,12 @@ bool sc2d_check_shape1_shape2(
 | x2 				| X position of second shape 							|
 | y2 				| Y position of second shape 							|
 | <br>width, height<br>radius<br>*vertices, vert_count | **Dimensions of second shape:**<br>Rectangle<br>Circle<br>Polygon\* |
-| overlap_x 		| returns x value of shortest overlap (or intersection) |
-| overlap_y 		| returns y value of shortest overlap (or intersection) |
+| overlap_x 		| X value of shortest overlap (or intersection)** |
+| overlap_y 		| Y value of shortest overlap (or intersection)** |
 
-\*Because `sc2d` does not defintion a 2D vector type, polygon vertices are passed as `float` array, and the `vert_count` refers to the total number of float elements **not** the number of x,y pairs (this may not be a good idea). For example, when passing an array of `struct {float x, float y}`, the vert_count should be multiplied by 2.
+\* Because `sc2d` does not define a 2D vector type, polygon vertices are passed as a `float` array and the `vert_count` refers to the total number of float elements, **not** the number of `x, y` pairs (this may not be a good idea). For example, when passing an array of `struct {float x, float y}`, the `vert_count` should be multiplied by 2.
+
+\*\* The `{overlap_x, overlap_y}` vector is always relative to the first shape in the argument list. Therefore, for static resolution it should be **subtracted** from the position of `shape1` and/or **added** to position `shape2`.
 
 ## Building the Demo
 
