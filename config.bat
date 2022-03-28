@@ -1,0 +1,1 @@
+cmake -G Ninja -DCMAKE_C_COMILER=gcc -S src/demo -B bin

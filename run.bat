@@ -1,2 +1,2 @@
 @echo off
-bin\sc2d-demo.exe
+bin\sc2d_demo.exe

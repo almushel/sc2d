@@ -50,13 +50,12 @@ int main() {
 
 	Polygon triangle = generatePolygon(3);
 	Polygon square = generatePolygon(4);
+	square = rotatePolygon(square, 45);
 	Polygon rect = square;
 	Polygon pentagon = generatePolygon(5);
+	pentagon = rotatePolygon(pentagon, -90);
 	Polygon hexagon = generatePolygon(6);
 	Polygon octagon = generatePolygon(8);
-
-	square = rotatePolygon(square, 45);
-	pentagon = rotatePolygon(pentagon, -90);
 
 	Object objects[] = {
 		{ .type = OBJECT_TYPE_CIRCLE, .scale = POLYGON_SCALE, },
