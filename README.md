@@ -13,31 +13,33 @@ The `sc2d` functions all follow a similar structure and all return `true` if a c
 
 ```c
 bool sc2d_check_shape1_shape2(
-	[in] float x1, 
-	[in] float y1,
-	[in] float shape1_dimensions ... ,
-	[in] float x2,
-	[in] float y2,
-	[in] float shape2_dimensions ... ,
-	[out] float *overlap_x,
-	[out] float *overlap_y
+	[in]  sc2d_v2 p1, 
+	[in]  float shape1_dimensions ... ,
+	[in]  sc2d_v2 p2,
+	[in]  float shape2_dimensions ... ,
+	[out] sc2d_v2 *overlap,
 )
 ```
 
 | Argument | Description |
 |-------------------|-------------------------------------------------------|
-| x1 				| X position of first shape 							|
-| y1 				| Y position of first shape 							|
-| <br>width, height<br>radius<br>*vertices, vert_count | **Dimensions of first shape:**<br>Rectangle<br>Circle<br>Polygon\* |
-| x2 				| X position of second shape 							|
-| y2 				| Y position of second shape 							|
-| <br>width, height<br>radius<br>*vertices, vert_count | **Dimensions of second shape:**<br>Rectangle<br>Circle<br>Polygon\* |
-| overlap_x 		| X value of shortest overlap (or intersection)** |
-| overlap_y 		| Y value of shortest overlap (or intersection)** |
+| p1 				| Position of first shape 							|
+| <br>width, height<br>radius<br>*vertices, vert_count | **Dimensions of first shape:**<br>Rectangle<br>Circle<br>Polygon |
+| p2 				| Position of second shape 							|
+| <br>width, height<br>radius<br>*vertices, vert_count | **Dimensions of second shape:**<br>Rectangle<br>Circle<br>Polygon |
+| overlap 			| value of shortest overlap (or intersection)** |
 
-\* Because `sc2d` does not define a 2D vector type, polygon vertices are passed as a `float` array and the `vert_count` refers to the total number of float elements, **not** the number of `x, y` pairs (this may not be a good idea). For example, when passing an array of `struct {float x, float y}`, the `vert_count` should be multiplied by 2.
 
-\*\* The `{overlap_x, overlap_y}` vector is always relative to the first shape in the argument list. Therefore, for static resolution it should be **subtracted** from the position of `shape1` and/or **added** to position `shape2`.
+### Simple Resolution
+
+The `overlap` vector is always relative to the first shape in the argument list. Therefore, for static resolution it should be **subtracted** from the position of `shape1` and/or **added** to position `shape2`.
+
+```c check_circles
+if (sc2d_check_circles(p1, r1, p2, r2, &overlap)) {
+	p1.x -= overlap.x;
+	p2.y -= overlap.y
+}
+```
 
 ## Building the Demo
 
