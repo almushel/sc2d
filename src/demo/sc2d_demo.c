@@ -3,6 +3,10 @@
 #include "raylib.h"
 #include "raymath.h"
 
+#define SIMPLE_COLLISION_2D_TYPES
+typedef Vector2 sc2d_v2;
+typedef struct sc2d_range { float min, max; } sc2d_range;
+
 #define SIMPLE_COLLISION_2D_IMPLEMENTATION 1
 #include "sc2d.h"
 
@@ -76,7 +80,6 @@ int main() {
 	};
 
 	for (int i = 0; i < arrayLength(objects); i++) {
-		GetRandomValue(0, SCREEN_WIDTH);
 		objects[i].position = getRandomScreenCoords();
 	}
 
@@ -95,13 +98,13 @@ int main() {
 			for (int i = 0; i < arrayLength(objects); i++) {
 				bool hit = false;
 				if (objects[i].type == OBJECT_TYPE_CIRCLE) {
-					hit = sc2d_check_point_circle(mousePosition.x, mousePosition.y, objects[i].position.x, objects[i].position.y, objects[i].scale, &overlap.x, &overlap.y);
+					hit = sc2d_check_point_circle(mousePosition, objects[i].position, objects[i].scale, &overlap);
 
 				} else {
 					Polygon p = rotatePolygon(objects[i].shape, objects[i].rotation);
 					p = scalePolygon(p, objects[i].scale);
 					p = translatePolygon(p, objects[i].position);
-					hit = sc2d_check_point_poly2d(mousePosition.x, mousePosition.y, (float*)p.vertices, p.vertCount * 2);
+					hit = sc2d_check_point_poly2d(mousePosition, p.vertices, p.vertCount);
 				}
 
 				if (hit) {
@@ -139,7 +142,7 @@ int main() {
 						color = RED;
 						if (i == shapeGrabbed) break;
 						objects[i].position = Vector2Subtract(objects[i].position, overlap);
-						//TraceLog(LOG_INFO, "overlap.x: %f, overlap.y: %f\n", overlap.x, overlap.y);
+						// TraceLog(LOG_INFO, "overlap.x: %f, overlap.y: %f\n", overlap.x, overlap.y);
 					}
 				}
 
@@ -193,15 +196,15 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 		case OBJECT_TYPE_CIRCLE: {
 			switch (obj2.type) {
 				case OBJECT_TYPE_CIRCLE:
-					result = sc2d_check_circles(obj1.position.x, obj1.position.y, obj1.scale, 
-													obj2.position.x, obj2.position.y, obj2.scale, 
-													&overlap->x, &overlap->y);
+					result = sc2d_check_circles(obj1.position, obj1.scale, 
+												obj2.position, obj2.scale, 
+												overlap);
 					break;
 				case OBJECT_TYPE_RECTANGLE: {
 					Rectangle rect = polyToRect(obj2.position, p2);
-					result = sc2d_check_circle_rect(obj1.position.x, obj1.position.y, obj1.scale, 
-														rect.x, rect.y, rect.width, rect.height,
-														&overlap->x, &overlap->y);
+					result = sc2d_check_circle_rect(obj1.position, obj1.scale, 
+														(Vector2){rect.x, rect.y}, (Vector2){rect.width, rect.height},
+														overlap);
 				}
 
 					break;
@@ -209,9 +212,9 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 					p1 = generatePolygon(MAX_POLY_SIDES); // circle
 					p1 = scalePolygon(p1, obj1.scale);
 
-					result = sc2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
-													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
-													&overlap->x, &overlap->y);
+					result = sc2d_check_poly2d(	obj1.position, p1.vertices, p1.vertCount, 
+													obj2.position, p2.vertices, p2.vertCount,
+													overlap);
 				} break;
 				
 				default:
@@ -225,9 +228,9 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 				case OBJECT_TYPE_CIRCLE: {
 					Rectangle rect = polyToRect(obj1.position, p1);
 
-					result = sc2d_check_circle_rect(obj2.position.x, obj2.position.y, obj2.scale, 
-														rect.x, rect.y, rect.width, rect.height,
-														&overlap->x, &overlap->y);
+					result = sc2d_check_circle_rect(obj2.position, obj2.scale, 
+														(Vector2){rect.x, rect.y}, (Vector2){rect.width, rect.height},
+														overlap);
 					*overlap = Vector2Scale(*overlap, -1.0f); // Flip the overlap, because the circle is the second object
 				} break;
 				
@@ -235,14 +238,14 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 					Rectangle rect1 = polyToRect(obj1.position, p1);
 					Rectangle rect2 = polyToRect(obj2.position, p2);
 
-					result = sc2d_check_rects(	rect1.x, rect1.y, rect1.width, rect1.height, 
-													rect2.x, rect2.y, rect2.width, rect2.height,
-													&overlap->x, &overlap->y);
+					result = sc2d_check_rects(	(Vector2){rect1.x, rect1.y}, (Vector2){rect1.width, rect1.height}, 
+												(Vector2){rect2.x, rect2.y}, (Vector2){rect2.width, rect2.height},
+												overlap);
 				} break;
 				case OBJECT_TYPE_POLYGON: {
-					result = sc2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
-													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
-													&overlap->x, &overlap->y);
+					result = sc2d_check_poly2d(	obj1.position, p1.vertices, p1.vertCount, 
+													obj2.position, p2.vertices, p2.vertCount,
+													overlap);
 				} break;
 				
 				default:
@@ -257,21 +260,21 @@ bool checkObjectCollision(Object obj1, Object obj2, Vector2* overlap) {
 					p2 = generatePolygon(MAX_POLY_SIDES); // circle
 					p2 = scalePolygon(p2, obj2.scale);
 
-					result = sc2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
-													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
-													&overlap->x, &overlap->y);
+					result = sc2d_check_poly2d(	obj1.position, p1.vertices, p1.vertCount, 
+													obj2.position, p2.vertices, p2.vertCount,
+													overlap);
 				}
 					break;
 				case OBJECT_TYPE_RECTANGLE: {
-					result = sc2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
-													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
-													&overlap->x, &overlap->y);
+					result = sc2d_check_poly2d(	obj1.position, p1.vertices, p1.vertCount, 
+													obj2.position, p2.vertices, p2.vertCount,
+													overlap);
 				} break;
 				
 				case OBJECT_TYPE_POLYGON: {				
-					result = sc2d_check_poly2d(	obj1.position.x, obj1.position.y, (float*)p1.vertices, p1.vertCount * 2, 
-													obj2.position.x, obj2.position.y, (float*)p2.vertices, p2.vertCount * 2,
-													&overlap->x, &overlap->y);
+					result = sc2d_check_poly2d(	obj1.position, p1.vertices, p1.vertCount, 
+													obj2.position, p2.vertices, p2.vertCount,
+													overlap);
 				} break;
 				default:
 					break;
