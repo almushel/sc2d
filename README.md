@@ -1,9 +1,7 @@
 # Simple Collision 2D
-*A single header 2D collision library written in C.*
+*A single-file 2D collision library written in C.*
 
-The goal with this library is to create a straightforward library that checks for collisions and calculates overlaps for a wide variety of 2 dimensional shapes and lines (and doesn't try to do anything else). It should be clear from the code and the comments what each function is doing and why and for that reason optimization is not really a goal here. 
-
-This library also avoids defining its own types for things like `Vector2` and `Polygon` to (hopefully) avoid conflicts and overlaps with various approaches in other libraries. I am not confident that this is a great idea.
+The goal with this library is to create a straightforward library that checks for collisions and calculates overlaps for a wide variety of 2 dimensional shapes and lines (and doesn't try to do anything else). It should be clear from the code and the comments what each function is doing. There are no dependencies aside from `math.h`.
 
 ## Using the Library
 
@@ -27,7 +25,7 @@ bool sc2d_check_shape1_shape2(
 | <br>width, height<br>radius<br>*vertices, vert_count | **Dimensions of first shape:**<br>Rectangle<br>Circle<br>Polygon |
 | p2 				| Position of second shape 							|
 | <br>width, height<br>radius<br>*vertices, vert_count | **Dimensions of second shape:**<br>Rectangle<br>Circle<br>Polygon |
-| overlap 			| value of shortest overlap (or intersection)** |
+| overlap 			| Value of shortest overlap (or intersection)** |
 
 
 ### Simple Resolution
@@ -45,7 +43,7 @@ if (sc2d_check_circles(p1, r1, p2, r2, &overlap)) {
 
 The included demo program currently uses [raylib](https://github.com/raysan5/raylib) version 4.0.0 or later, but doesn't make extensive use of its features. Set `sc2d_RAYLIB_DIR` in `src/demo/CMakeLists.txt` to the raylib source directory on your machine.
 
-Also included is my current preferred build configuration for Windows.
+Also included is a build/run configuration for Windows.
 
 ```
 config.bat
