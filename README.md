@@ -1,7 +1,8 @@
 # Simple Collision 2D
 *A single-file 2D collision library written in C.*
 
-The goal with this library is to create a straightforward library that checks for collisions and calculates overlaps for a wide variety of 2 dimensional shapes and lines (and doesn't try to do anything else). It should be clear from the code and the comments what each function is doing. There are no dependencies aside from `math.h`.
+The goal with this library is to create a straightforward library that checks for collisions and calculates overlaps for a wide variety of 2 dimensional shapes and lines (and doesn't try to do anything else).
+It should be clear from the code and the comments what each function is doing.
 
 ## Using the Library
 
@@ -30,7 +31,22 @@ bool sc2d_check_shape1_shape2(
 | <br>width, height<br>radius<br>*vertices, vert_count 	| **Dimensions of second shape:**<br>Rectangle<br>Circle<br>Polygon	|
 | overlap_x, overlap_y 									| Value of shortest overlap (or intersection)**  					|
 
-## Simple Collision Resolution
+## Dependencies
+There are no dependencies aside from `math.h` by default.
+To eliminate this, define your own replacements before including the implementation code.
+
+```c
+#define sc2d_hypotf hypotf
+#define sc2d_fabsf fabsf
+#define sc2d_min fminf
+#define sc2d_max fmaxf
+#define sc2d_atan2 atan2
+
+#define SIMPLE_COLLISION_2D_IMPLEMENTATION
+#include "sc2d.h"
+```
+
+## Static Collision Resolution
 
 The `overlap` vector is always relative to the first shape in the argument list. Therefore, for static resolution it should be **subtracted** from the position of `shape1` and/or **added** to position `shape2` to push the shapes apart.
 

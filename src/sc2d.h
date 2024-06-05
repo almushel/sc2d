@@ -23,7 +23,30 @@ bool sc2d_check_point_line(float px, float py, float start_x, float start_y, flo
 
 #ifdef SIMPLE_COLLISION_2D_IMPLEMENTATION
 
-#include <math.h>
+#ifndef sc2d_hypotf
+#include "math.h"
+#define sc2d_hypotf hypotf
+#endif
+
+#ifndef sc2d_fabsf
+#include "math.h"
+#define sc2d_fabsf fabsf
+#endif
+
+#ifndef sc2d_min
+#include "math.h"
+#define sc2d_min fminf
+#endif
+
+#ifndef sc2d_max
+#include "math.h"
+#define sc2d_max fmaxf
+#endif
+
+#ifndef sc2d_atan2
+#include "math.h"
+#define sc2d_atan2 atan2
+#endif
 
 // Check for collion between a point and a circle and return penetration by reference
 bool sc2d_check_point_circle(float px, float py, float cx, float cy, float cr, float* overlap_x, float* overlap_y) {
@@ -32,7 +55,7 @@ bool sc2d_check_point_circle(float px, float py, float cx, float cy, float cr, f
 	float delta_x = cx - px;
 	float delta_y = cy - py;
 
-	float delta_m = hypotf(delta_x, delta_y);
+	float delta_m = sc2d_hypotf(delta_x, delta_y);
 	float delta_r =  cr - delta_m;
 
 	if (result = delta_r > 0) {
@@ -56,10 +79,10 @@ bool sc2d_check_point_rect(float px, float py, float rx, float ry, float rw, flo
 	float delta_x = rect_center_x - px;
 	float delta_y = rect_center_y - py;
 
-	if (result = (fabsf(delta_x) < rect_center_width && fabsf(delta_y) < rect_center_height) ) {
+	if (result = (sc2d_fabsf(delta_x) < rect_center_width && sc2d_fabsf(delta_y) < rect_center_height) ) {
 		
-		*overlap_x = (rect_center_width - fabsf(delta_x));
-		*overlap_y = (rect_center_height - fabsf(delta_y));
+		*overlap_x = (rect_center_width - sc2d_fabsf(delta_x));
+		*overlap_y = (rect_center_height - sc2d_fabsf(delta_y));
 
 		*overlap_x *= (float)(int)(*overlap_x < *overlap_y);
 		*overlap_y *= (float)(int)(*overlap_x == 0);
@@ -76,7 +99,7 @@ bool sc2d_check_circles(float p1x, float p1y, float r1, float p2x, float p2y, fl
 
 	float delta_x = p2x - p1x;
 	float delta_y = p2y - p1y;
-	float magnitude = hypotf(delta_x, delta_y);
+	float magnitude = sc2d_hypotf(delta_x, delta_y);
 	float overlap_magnitude = (r1 + r2) - magnitude;
 
 	if (result = overlap_magnitude > 0) {
@@ -101,7 +124,7 @@ bool sc2d_check_rects(float p1x, float p1y, float r1w, float r1h, float p2x, flo
 		if (p2x < p1x) *overlap_x *= -1;
 		if (p2y < p1y) *overlap_y *= -1;
 
-		*overlap_x *= (float)(int)(fabsf(*overlap_x) < fabsf(*overlap_y));
+		*overlap_x *= (float)(int)(sc2d_fabsf(*overlap_x) < sc2d_fabsf(*overlap_y));
 		*overlap_y *= (float)(int)(*overlap_x == 0);
 	}
 
@@ -117,12 +140,12 @@ bool sc2d_check_circle_centered_rect(float cx, float cy, float cr, float rx, flo
 	float delta_x = cx - rx;
 	float delta_y = cy - ry;
 
-	if ( fabsf(delta_x) > (cr + rw) || fabsf(delta_y) > (cr + rh)) {
+	if ( sc2d_fabsf(delta_x) > (cr + rw) || sc2d_fabsf(delta_y) > (cr + rh)) {
 		result = false;
 	} else {
 		//Get intersection point of vector and nearest rect edge relative to the center of the rectangle
-		float clamp_x = fminf(fmaxf(delta_x, -rw), rw);
-		float clamp_y = fminf(fmaxf(delta_y, -rh), rh);
+		float clamp_x = sc2d_min(sc2d_max(delta_x, -rw), rw);
+		float clamp_y = sc2d_min(sc2d_max(delta_y, -rh), rh);
 	
 		// Get a vector pointing from the center of circle to center of rect
 		delta_x = rx - cx;
@@ -132,7 +155,7 @@ bool sc2d_check_circle_centered_rect(float cx, float cy, float cr, float rx, flo
 		clamp_x += delta_x;
 		clamp_y += delta_y;
 
-		float magnitude = hypotf(clamp_x, clamp_y);
+		float magnitude = sc2d_hypotf(clamp_x, clamp_y);
 
 		if (magnitude == 0.0f) magnitude = 1.0f; //Hack to avoid divide by zero when circle is inside rect
 		if (magnitude < cr) {
@@ -172,8 +195,8 @@ static inline void project_poly2d_to_axis(float axis_x, float axis_y, float* pol
 	
 	for (int i = 0; i < poly_vert_count; i++) {
 		float dot = (axis_x * v2_verts[i].x) + (axis_y * v2_verts[i].y); // dot product
-		*min = fminf(*min, dot);
-		*max = fmaxf(*max, dot);
+		*min = sc2d_min(*min, dot);
+		*max = sc2d_max(*max, dot);
 	}
 }
 
@@ -203,7 +226,7 @@ static void v2_normal(float* x, float* y, bool clockwise) {
 static void v2_normalize(float* x, float* y) {
 	float magnitude;
 
-	magnitude = hypotf(*x, *y);
+	magnitude = sc2d_hypotf(*x, *y);
 	*x /= magnitude;
 	*y /= magnitude;
 }
@@ -248,7 +271,7 @@ bool sc2d_check_poly2d(	float p1x, float p1y, float* p1_verts, int p1_count,
 			return false;
 		}
 		
-		float distance = fminf(p1_max, p2_max) - fmaxf(p1_min, p2_min);
+		float distance = sc2d_min(p1_max, p2_max) - sc2d_max(p1_min, p2_min);
 		if (distance < min_distance) { // Update minimum distance for overlap
 			min_distance = distance;
 			*overlap_x = axis_x * (float)(1 - 2 * (int)(offset < 0) );
@@ -273,7 +296,7 @@ bool sc2d_check_poly2d(	float p1x, float p1y, float* p1_verts, int p1_count,
 			return false;
 		}
 
-		float distance = fminf(p1_max, p2_max) - fmaxf(p1_min, p2_min);
+		float distance = sc2d_min(p1_max, p2_max) - sc2d_max(p1_min, p2_min);
 		if (distance < min_distance) {
 			min_distance = distance;
 			*overlap_x = axis_x * (float)(1 - 2 * (int)(offset < 0) );
@@ -319,16 +342,16 @@ bool sc2d_check_point_line(float px, float py, float start_x, float start_y, flo
 	// Vector pointing from line start to line end
 	float line_x = end_x - start_x;
 	float line_y = end_y - start_y;
-	float line_length = hypotf(line_y, line_x);
+	float line_length = sc2d_hypotf(line_y, line_x);
 
 	// Vector point from line start to point
 	float point_delta_x = px - start_x;
 	float point_delta_y = py - start_y;
-	float distance_to_point = hypotf(point_delta_x, point_delta_y);
+	float distance_to_point = sc2d_hypotf(point_delta_x, point_delta_y);
 
 	// If the angles of both vectors are equal,
 	// then the point is on the ray starting at start
-	if (atan2(line_y, line_x) == atan2(point_delta_y, point_delta_x)) {
+	if (sc2d_atan2(line_y, line_x) == sc2d_atan2(point_delta_y, point_delta_x)) {
 		// if the distance to the point is less than or equal to line length,
 		// then the point is on the segment start -> end
 		if (segment && (distance_to_point <= line_length) ) {
@@ -341,7 +364,7 @@ bool sc2d_check_point_line(float px, float py, float start_x, float start_y, flo
 	// angle from start to the point,
 	// then the point is still on the (infinite) line defined by start and end
 	// but not the segment or ray defined by start and end
-	} else if (!segment && (atan2(-line_x, -line_y) == atan2(point_delta_y, point_delta_x)) ) {
+	} else if (!segment && (sc2d_atan2(-line_x, -line_y) == sc2d_atan2(point_delta_y, point_delta_x)) ) {
 		result = true;
 	}
 
