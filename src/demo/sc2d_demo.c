@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 #include "raymath.h"
+#include <stdint.h>
 
 // NOTE: This demo uses Vector3 instead of Vector2 to demonstrate non-standard structs in the sc2d_check_polygon functions
 // The z value is entirely unused here and assumed to be zero
@@ -13,7 +14,7 @@ typedef Vector3 sc2d_v2;
 #endif
 
 #define SIMPLE_COLLISION_2D_IMPLEMENTATION 1
-#include "sc2d.h"
+#include "../sc2d.h"
 
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
@@ -269,22 +270,16 @@ int main(void) {
 
 	Object objects[] = {
 		{ .type = OBJECT_TYPE_CIRCLE, .scale = POLYGON_SCALE, },
-		
 		{ .type = OBJECT_TYPE_CIRCLE, .scale = POLYGON_SCALE * 1.5, },
-		
 		{ .type = OBJECT_TYPE_POLYGON, .shape = triangle, .scale = POLYGON_SCALE, },
-
 		{ .type = OBJECT_TYPE_RECTANGLE, .shape = square, .scale = POLYGON_SCALE, },
-
 		{ .type = OBJECT_TYPE_RECTANGLE, .shape = rect, .scale = POLYGON_SCALE * 4, },
-
 		{ .type = OBJECT_TYPE_POLYGON, .shape = pentagon, .scale = POLYGON_SCALE, },
-
 		{ .type = OBJECT_TYPE_POLYGON, .shape = hexagon, .scale = POLYGON_SCALE, },
-
 		{ .type = OBJECT_TYPE_POLYGON, .shape = octagon, .scale = POLYGON_SCALE, }
 	};
 
+	SetRandomSeed(0);
 	for (int i = 0; i < arrayLength(objects); i++) {
 		objects[i].position = random_screen_coords();
 	}
